@@ -1,0 +1,23 @@
+{
+  "name": "generador-de-facturas",
+  "version": "1.0.0",
+  "description": "Aplicación de escritorio Windows para generación de facturas en PDF organizadas por año y mes",
+  "main": "main.js",
+  "scripts": {
+    "start": "node node_modules/electron/cli.js .",
+    "test": "node node_modules/electron/cli.js tests/test_suite.js"
+  },
+  "keywords": [
+    "facturas",
+    "pdf",
+    "electron",
+    "desktop",
+    "windows"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^45.2.2"
+  }
+}

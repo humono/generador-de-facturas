@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generador de Facturas</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Barra Superior -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-wrapper">
+          <img src="../../assets/logo.png" alt="Logo de la Aplicación" class="app-brand-logo" id="headerAppLogo">
+        </div>
+        <div class="brand-text">
+          <h1>Generador de Facturas</h1>
+          <p id="appSubtitle">Facturación rápida para escritorio Windows</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="folder-badge" id="storagePathBadge" title="Ruta actual donde se guardan las facturas">
+          <span class="icon">📁</span>
+          <span class="path-text" id="displayFolder">Cargando ruta...</span>
+        </div>
+        <button id="btnOpenConfig" class="btn btn-secondary">
+          <span>⚙️</span> Configuración
+        </button>
+      </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="app-main">
+      <form id="invoiceForm">
+        <!-- Tarjeta: Datos Generales de la Factura -->
+        <section class="card invoice-header-card">
+          <div class="card-header">
+            <h2>1. Datos de la Factura</h2>
+            <div class="filename-preview">
+              Archivo resultante: <strong id="previewFileName">2026-1.pdf</strong>
+            </div>
+          </div>
+          <div class="grid-row-4">
+            <div class="form-group">
+              <label for="invoiceId">ID de la Factura <span class="required">*</span></label>
+              <div class="input-with-badge">
+                <span class="year-prefix" id="yearPrefix">2026-</span>
+                <input type="number" id="invoiceId" min="1" required class="form-control" placeholder="1">
+              </div>
+              <small class="form-hint">Siguiente número sugerido automáticamente</small>
+            </div>
+            <div class="form-group">
+              <label for="invoiceDate">Fecha de Emisión <span class="required">*</span></label>
+              <input type="date" id="invoiceDate" required class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="dueDate">Fecha de Vencimiento (Opcional)</label>
+              <input type="date" id="dueDate" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="taxRate">IVA Aplicable (%)</label>
+              <div class="input-with-unit">
+                <input type="number" id="taxRate" min="0" max="100" step="1" value="21" class="form-control">
+                <span class="unit">%</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tarjeta: Emisor y Cliente (2 Columnas) -->
+        <div class="two-columns-grid">
+          <!-- Columna: Datos de la Empresa (Emisor) -->
+          <section class="card">
+            <div class="card-header">
+              <h2>2. Datos de mi Empresa (Emisor)</h2>
+              <button type="button" id="btnResetCompany" class="btn-link" title="Restablecer con los datos guardados en Configuración">
+                Restablecer
+              </button>
+            </div>
+
+            <!-- Tira visual de logo activo -->
+            <div class="company-logo-strip">
+              <div class="company-logo-thumbnail" id="companyLogoThumbnail">
+                <img id="formCompanyLogoImg" src="../../assets/logo.png" alt="Logotipo de la empresa">
+                <span id="formCompanyNoLogo" style="display: none;">Sin logo</span>
+              </div>
+              <div class="company-logo-strip-info">
+                <span class="logo-strip-title">Logotipo activo en cabecera</span>
+                <span class="logo-strip-desc">Se incluirá en la factura. Cámbialo en ⚙️ Configuración.</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="emitterName">Nombre comercial / Razón Social <span class="required">*</span></label>
+              <input type="text" id="emitterName" required class="form-control" placeholder="Mi Empresa S.L.">
+            </div>
+            <div class="form-group">
+              <label for="emitterDetails">Datos fiscales completos (NIF/CIF, Domicilio, Contacto) <span class="required">*</span></label>
+              <textarea id="emitterDetails" rows="4" required class="form-control" placeholder="CIF: B12345678&#10;Calle Mayor 1, 28001 Madrid&#10;Tel: 600000000 | contacto@miempresa.com"></textarea>
+            </div>
+          </section>
+
+          <!-- Columna: Datos de Facturación del Cliente (Receptor) -->
+          <section class="card">
+            <div class="card-header">
+              <h2>3. Datos de Facturación del Cliente</h2>
+            </div>
+            <div class="form-group">
+              <label for="clientName">Nombre / Razón Social del Cliente <span class="required">*</span></label>
+              <input type="text" id="clientName" required class="form-control" placeholder="Cliente Ejemplo S.A.">
+            </div>
+            <div class="form-group">
+              <label for="clientDetails">Datos fiscales del cliente (NIF/CIF, Domicilio, etc.) <span class="required">*</span></label>
+              <textarea id="clientDetails" rows="4" required class="form-control" placeholder="NIF/CIF: A87654321&#10;Avenida de la Industria 45&#10;28108 Alcobendas, Madrid"></textarea>
+            </div>
+          </section>
+        </div>
+
+        <!-- Tarjeta: Conceptos, Cantidades y Precios -->
+        <section class="card items-card">
+          <div class="card-header">
+            <h2>4. Conceptos y Líneas de Factura</h2>
+            <button type="button" id="btnAddItem" class="btn btn-outline">
+              <span>➕</span> Añadir Concepto
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="items-table" id="itemsTable">
+              <thead>
+                <tr>
+                  <th style="width: 45%;">Concepto / Descripción <span class="required">*</span></th>
+                  <th style="width: 15%;" class="text-center">Cantidad <span class="required">*</span></th>
+                  <th style="width: 20%;" class="text-right">Precio Unitario (€) <span class="required">*</span></th>
+                  <th style="width: 15%;" class="text-right">Total Línea</th>
+                  <th style="width: 5%;" class="text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="itemsBody">
+                <!-- Filas añadidas dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Bloque Inferior: Pago y Totales -->
+        <div class="bottom-grid">
+          <!-- Información adicional y pago -->
+          <section class="card payment-notes-card">
+            <div class="card-header">
+              <h3>Datos de Pago y Observaciones</h3>
+            </div>
+            <div class="form-group">
+              <textarea id="paymentNotes" rows="3" class="form-control" placeholder="Forma de pago: Transferencia bancaria a ES00 0000 0000 0000 0000 0000"></textarea>
+            </div>
+          </section>
+
+          <!-- Resumen y Totales Calculados -->
+          <section class="card totals-card">
+            <div class="totals-breakdown">
+              <div class="totals-line">
+                <span class="label">Base Imponible:</span>
+                <span class="val" id="calcSubtotal">0,00 €</span>
+              </div>
+              <div class="totals-line">
+                <span class="label" id="calcTaxLabel">IVA (21%):</span>
+                <span class="val" id="calcTax">0,00 €</span>
+              </div>
+              <div class="totals-line grand-total-line">
+                <span class="label">TOTAL FACTURA:</span>
+                <span class="val" id="calcTotal">0,00 €</span>
+              </div>
+            </div>
+
+            <div class="destination-info">
+              <span>📍 Guardado automático en: </span>
+              <code id="destinationPathPreview">Cargando...</code>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="action-buttons">
+              <button type="button" id="btnPreview" class="btn btn-secondary">
+                <span>👁️</span> Vista Previa
+              </button>
+              <button type="submit" id="btnGenerate" class="btn btn-primary">
+                <span>📄</span> Generar Factura (PDF)
+              </button>
+            </div>
+          </section>
+        </div>
+      </form>
+    </main>
+
+    <!-- Modal de Configuración -->
+    <div class="modal-overlay" id="configModal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>⚙️ Configuración del Generador</h2>
+          <button type="button" class="close-modal" id="btnCloseConfig">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="configForm">
+            <!-- Sección: Logotipo de la Empresa -->
+            <fieldset class="config-fieldset">
+              <legend>Logotipo de la Empresa (Cabecera de Factura)</legend>
+              <p class="fieldset-desc">Este logotipo se mostrará en la cabecera de todas las facturas en PDF y en la ventana de la aplicación.</p>
+              <div class="logo-config-box">
+                <div class="logo-preview-box">
+                  <img id="cfgLogoPreview" src="../../assets/logo.png" alt="Vista previa del logo">
+                  <span id="cfgNoLogoText" style="display: none;">Sin logotipo seleccionado</span>
+                </div>
+                <div class="logo-actions">
+                  <button type="button" id="btnSelectLogo" class="btn btn-secondary">
+                    <span>🖼️</span> Cambiar Logotipo...
+                  </button>
+                  <button type="button" id="btnRemoveLogo" class="btn btn-outline">
+                    <span>❌</span> Quitar Logo
+                  </button>
+                  <input type="hidden" id="configLogoPath" value="assets/logo.png">
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset class="config-fieldset">
+              <legend>Carpeta de Almacenamiento</legend>
+              <p class="fieldset-desc">Las facturas se clasificarán automáticamente en subcarpetas por año y mes (ej: <code>{Ruta}\2026\11\2026-X.pdf</code>).</p>
+              <div class="folder-picker-group">
+                <input type="text" id="configInvoicesPath" class="form-control" required readonly>
+                <button type="button" id="btnSelectFolder" class="btn btn-secondary">
+                  <span>📂</span> Cambiar Carpeta...
+                </button>
+              </div>
+            </fieldset>
+
+            <fieldset class="config-fieldset">
+              <legend>Datos Predeterminados de tu Empresa</legend>
+              <div class="grid-row-2">
+                <div class="form-group">
+                  <label for="cfgCompName">Nombre o Razón Social</label>
+                  <input type="text" id="cfgCompName" class="form-control">
+                </div>
+                <div class="form-group">
+                  <label for="cfgCompCif">CIF / NIF</label>
+                  <input type="text" id="cfgCompCif" class="form-control">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="cfgCompAddress">Dirección</label>
+                <input type="text" id="cfgCompAddress" class="form-control">
+              </div>
+              <div class="grid-row-2">
+                <div class="form-group">
+                  <label for="cfgCompPostalCode">Código Postal</label>
+                  <input type="text" id="cfgCompPostalCode" class="form-control">
+                </div>
+                <div class="form-group">
+                  <label for="cfgCompCity">Población / Provincia</label>
+                  <input type="text" id="cfgCompCity" class="form-control">
+                </div>
+              </div>
+              <div class="grid-row-2">
+                <div class="form-group">
+                  <label for="cfgCompPhone">Teléfono de contacto</label>
+                  <input type="text" id="cfgCompPhone" class="form-control">
+                </div>
+                <div class="form-group">
+                  <label for="cfgCompEmail">Email de contacto</label>
+                  <input type="email" id="cfgCompEmail" class="form-control">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="cfgCompIban">IBAN Bancario para cobros</label>
+                <input type="text" id="cfgCompIban" class="form-control" placeholder="ES00 0000 0000 0000 0000 0000">
+              </div>
+              <div class="form-group">
+                <label for="cfgCompNotes">Notas o texto legal por defecto</label>
+                <textarea id="cfgCompNotes" rows="2" class="form-control"></textarea>
+              </div>
+            </fieldset>
+
+            <fieldset class="config-fieldset">
+              <legend>Numeración y Parámetros</legend>
+              <div class="grid-row-2">
+                <div class="form-group">
+                  <label for="cfgLastId">Último ID de Factura registrado</label>
+                  <input type="number" id="cfgLastId" min="0" class="form-control">
+                  <small class="form-hint">El siguiente ID será este número + 1</small>
+                </div>
+                <div class="form-group">
+                  <label for="cfgDefaultTax">IVA por defecto (%)</label>
+                  <input type="number" id="cfgDefaultTax" min="0" max="100" class="form-control">
+                </div>
+              </div>
+            </fieldset>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" id="btnCancelConfig">Cancelar</button>
+              <button type="submit" class="btn btn-primary">Guardar Configuración</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Éxito al Generar Factura -->
+    <div class="modal-overlay" id="successModal" style="display: none;">
+      <div class="modal-content success-card">
+        <div class="success-header">
+          <div class="success-icon">🎉</div>
+          <h2>¡Factura Generada con Éxito!</h2>
+        </div>
+        <div class="success-body">
+          <p class="success-invoice-id">Factura Nº: <strong id="succInvoiceNum">2026-1</strong></p>
+          <div class="file-path-box">
+            <span class="label">Ruta del archivo PDF:</span>
+            <input type="text" id="succFilePath" class="form-control" readonly>
+          </div>
+          <div class="success-breakdown">
+            <span>Base: <b id="succSubtotal">0,00 €</b></span>
+            <span>IVA: <b id="succTax">0,00 €</b></span>
+            <span class="total">Total: <b id="succTotal">0,00 €</b></span>
+          </div>
+        </div>
+        <div class="success-footer">
+          <button type="button" id="btnOpenGeneratedPdf" class="btn btn-primary">
+            <span>📄</span> Abrir Factura (PDF)
+          </button>
+          <button type="button" id="btnOpenGeneratedFolder" class="btn btn-secondary">
+            <span>📂</span> Abrir Carpeta
+          </button>
+          <button type="button" id="btnCloseSuccess" class="btn btn-outline">
+            Crear Otra Factura
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notificación Toast flotante -->
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

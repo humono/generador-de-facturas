@@ -1,0 +1,18 @@
+{
+  "company": {
+    "name": "Mi Empresa S.L.",
+    "cif": "B12345678",
+    "address": "Calle Principal 123, 1º B",
+    "postalCode": "28001",
+    "city": "Madrid",
+    "phone": "+34 600 000 000",
+    "email": "contacto@miempresa.com",
+    "iban": "ES00 0000 0000 0000 0000 0000",
+    "notes": "Gracias por su confianza.",
+    "logoPath": "assets/logo.png"
+  },
+  "invoicesPath": "E:\\Facturas",
+  "lastInvoiceId": 1,
+  "defaultTaxRate": 21,
+  "currency": "€"
+}
