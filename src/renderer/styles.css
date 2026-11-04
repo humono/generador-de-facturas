@@ -715,3 +715,147 @@ textarea.form-control {
   flex-direction: column;
   gap: 8px;
 }
+
+/* Modal de Exportación a ZIP para Gestoría */
+.export-modal-content {
+  max-width: 680px;
+}
+
+.export-year-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  margin-bottom: 16px;
+}
+
+.export-year-container label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.export-year-select {
+  max-width: 160px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.quick-quarters-box {
+  margin-bottom: 16px;
+}
+
+.quick-title {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.quarters-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-quarter {
+  font-size: 12px;
+  padding: 6px 12px;
+}
+
+.btn-quarter.active {
+  background-color: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.months-checkboxes-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.month-card-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.month-card-label:hover {
+  background: #f8fafc;
+  border-color: var(--border-focus);
+}
+
+.month-card-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.month-card-label.selected {
+  background-color: var(--primary-light);
+  border-color: var(--primary);
+}
+
+.month-card-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.export-status-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+}
+
+.export-status-box.has-invoices {
+  background-color: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.export-status-box.no-invoices {
+  background-color: #fffbeb;
+  border-color: #fde68a;
+}
+
+.status-indicator {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.status-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.status-details strong {
+  font-size: 13px;
+  color: var(--text-main);
+}
+
+.status-details small {
+  font-size: 11px;
+  color: var(--text-muted);
+}

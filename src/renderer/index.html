@@ -24,6 +24,9 @@
           <span class="icon">📁</span>
           <span class="path-text" id="displayFolder">Cargando ruta...</span>
         </div>
+        <button id="btnOpenExport" class="btn btn-secondary" title="Exportar facturas seleccionadas en un archivo ZIP para tu gestor">
+          <span>📦</span> Exportar Gestoría (ZIP)
+        </button>
         <button id="btnOpenConfig" class="btn btn-secondary">
           <span>⚙️</span> Configuración
         </button>
@@ -299,6 +302,63 @@
               <button type="submit" class="btn btn-primary">Guardar Configuración</button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Exportación a ZIP para Gestoría -->
+    <div class="modal-overlay" id="exportModal" style="display: none;">
+      <div class="modal-content export-modal-content">
+        <div class="modal-header">
+          <h2>📦 Exportar Facturas para Gestoría (ZIP)</h2>
+          <button type="button" class="close-modal" id="btnCloseExport">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="fieldset-desc" style="margin-bottom: 16px;">
+            Elige el año y los meses que deseas enviar a tu gestor. La aplicación empaquetará todas las facturas en un único archivo <code>.zip</code> clasificadas por mes e incluirá una hoja índice en CSV.
+          </p>
+
+          <!-- Selector de Año -->
+          <div class="export-year-container">
+            <label for="exportYearSelect">Año Fiscal:</label>
+            <select id="exportYearSelect" class="form-control export-year-select">
+              <!-- Rellenado dinámicamente -->
+            </select>
+          </div>
+
+          <!-- Selección Rápida de Trimestre -->
+          <div class="quick-quarters-box">
+            <span class="quick-title">Selección Rápida de Período:</span>
+            <div class="quarters-buttons">
+              <button type="button" class="btn btn-outline btn-quarter" data-q="1">1T (Ene - Mar)</button>
+              <button type="button" class="btn btn-outline btn-quarter" data-q="2">2T (Abr - Jun)</button>
+              <button type="button" class="btn btn-outline btn-quarter" data-q="3">3T (Jul - Sep)</button>
+              <button type="button" class="btn btn-outline btn-quarter" data-q="4">4T (Oct - Dic)</button>
+              <button type="button" class="btn btn-outline btn-quarter" data-q="all">Año Completo</button>
+              <button type="button" class="btn-link" id="btnExportDeselectAll">Deseleccionar</button>
+            </div>
+          </div>
+
+          <!-- Checkboxes de Meses (Cuadrícula) -->
+          <div class="months-checkboxes-grid" id="monthsCheckboxesContainer">
+            <!-- Rellenado dinámicamente con los 12 meses -->
+          </div>
+
+          <!-- Estado y Conteo de Facturas -->
+          <div class="export-status-box" id="exportStatusBox">
+            <div class="status-indicator" id="exportStatusIcon">🔍</div>
+            <div class="status-details">
+              <strong id="exportCountText">Comprobando facturas disponibles...</strong>
+              <small id="exportHintText">Selecciona los meses deseados arriba</small>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="margin-top: 18px;">
+            <button type="button" class="btn btn-secondary" id="btnCancelExport">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnConfirmExportZip" disabled>
+              <span>💾</span> Guardar Archivo ZIP...
+            </button>
+          </div>
         </div>
       </div>
     </div>

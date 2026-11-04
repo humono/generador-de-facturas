@@ -213,6 +213,7 @@ function setupEventListeners() {
   // Modales
   setupConfigModal();
   setupSuccessModal();
+  setupExportModal();
 }
 
 // Añadir fila a la tabla de conceptos
@@ -546,6 +547,218 @@ function setupConfigModal() {
       showToast('Configuración y logotipo guardados correctamente.');
     } else {
       alert('Error guardando la configuración.');
+    }
+  });
+}
+
+// Configurar Modal de Exportación a ZIP para Gestoría
+function setupExportModal() {
+  const modal = document.getElementById('exportModal');
+  const btnOpen = document.getElementById('btnOpenExport');
+  const btnClose = document.getElementById('btnCloseExport');
+  const btnCancel = document.getElementById('btnCancelExport');
+  const yearSelect = document.getElementById('exportYearSelect');
+  const monthsContainer = document.getElementById('monthsCheckboxesContainer');
+  const btnConfirm = document.getElementById('btnConfirmExportZip');
+  const countText = document.getElementById('exportCountText');
+  const hintText = document.getElementById('exportHintText');
+  const statusBox = document.getElementById('exportStatusBox');
+  const statusIcon = document.getElementById('exportStatusIcon');
+  const deselectBtn = document.getElementById('btnExportDeselectAll');
+  const quarterButtons = document.querySelectorAll('.btn-quarter');
+
+  const MONTHS_DATA = [
+    { id: '01', name: '01 - Ene' },
+    { id: '02', name: '02 - Feb' },
+    { id: '03', name: '03 - Mar' },
+    { id: '04', name: '04 - Abr' },
+    { id: '05', name: '05 - May' },
+    { id: '06', name: '06 - Jun' },
+    { id: '07', name: '07 - Jul' },
+    { id: '08', name: '08 - Ago' },
+    { id: '09', name: '09 - Sep' },
+    { id: '10', name: '10 - Oct' },
+    { id: '11', name: '11 - Nov' },
+    { id: '12', name: '12 - Dic' }
+  ];
+
+  // Renderizar checkboxes de los 12 meses
+  monthsContainer.innerHTML = MONTHS_DATA.map(m => `
+    <label class="month-card-label" id="labelMonth_${m.id}">
+      <input type="checkbox" class="month-checkbox" value="${m.id}">
+      <span class="month-card-text">${m.name}</span>
+    </label>
+  `).join('');
+
+  function getSelectedMonths() {
+    const checkboxes = monthsContainer.querySelectorAll('.month-checkbox:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+  }
+
+  function updateMonthLabelClasses() {
+    monthsContainer.querySelectorAll('.month-checkbox').forEach(cb => {
+      const parentLabel = cb.closest('.month-card-label');
+      if (cb.checked) {
+        parentLabel.classList.add('selected');
+      } else {
+        parentLabel.classList.remove('selected');
+      }
+    });
+  }
+
+  async function checkPeriodStatus() {
+    const year = yearSelect.value;
+    const months = getSelectedMonths();
+
+    updateMonthLabelClasses();
+
+    if (months.length === 0) {
+      statusBox.className = 'export-status-box no-invoices';
+      statusIcon.textContent = 'ℹ️';
+      countText.textContent = 'Ningún mes seleccionado';
+      hintText.textContent = 'Marca al menos un mes o utiliza los botones de trimestre arriba.';
+      btnConfirm.disabled = true;
+      return;
+    }
+
+    statusBox.className = 'export-status-box';
+    statusIcon.textContent = '⏳';
+    countText.textContent = 'Buscando facturas en el disco...';
+    hintText.textContent = `Año ${year} (${months.length} meses)`;
+
+    try {
+      const res = await window.electronAPI.checkInvoicesPeriod({ year, months });
+      if (res.count > 0) {
+        statusBox.className = 'export-status-box has-invoices';
+        statusIcon.textContent = '✅';
+        countText.textContent = `¡${res.count} factura(s) encontrada(s) lista(s) para exportar!`;
+        const previewNames = res.files.slice(0, 3).map(f => f.fileName).join(', ');
+        hintText.textContent = `Incluye: ${previewNames}${res.count > 3 ? ' y más...' : ''}`;
+        btnConfirm.disabled = false;
+      } else {
+        statusBox.className = 'export-status-box no-invoices';
+        statusIcon.textContent = '⚠️';
+        countText.textContent = 'No hay facturas en los meses seleccionados';
+        hintText.textContent = `No se han encontrado archivos PDF en las carpetas de ${year}.`;
+        btnConfirm.disabled = true;
+      }
+    } catch (err) {
+      statusBox.className = 'export-status-box no-invoices';
+      statusIcon.textContent = '❌';
+      countText.textContent = 'Error al verificar facturas';
+      hintText.textContent = err.message;
+      btnConfirm.disabled = true;
+    }
+  }
+
+  function selectMonthsByQuarter(q) {
+    const quarterMap = {
+      '1': ['01', '02', '03'],
+      '2': ['04', '05', '06'],
+      '3': ['07', '08', '09'],
+      '4': ['10', '11', '12'],
+      'all': ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
+    };
+
+    const targetMonths = quarterMap[q] || [];
+    monthsContainer.querySelectorAll('.month-checkbox').forEach(cb => {
+      cb.checked = targetMonths.includes(cb.value);
+    });
+
+    quarterButtons.forEach(btn => {
+      if (btn.dataset.q === q) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    checkPeriodStatus();
+  }
+
+  // Abrir Modal
+  btnOpen.addEventListener('click', async () => {
+    try {
+      const { availableYears, currentYear: defaultYear } = await window.electronAPI.getExportData();
+      yearSelect.innerHTML = availableYears.map(y => `<option value="${y}">${y}</option>`).join('');
+      yearSelect.value = String(defaultYear);
+
+      // Pre-seleccionar trimestre actual
+      const currentMonth = new Date().getMonth() + 1;
+      const currentQ = String(Math.ceil(currentMonth / 3));
+      selectMonthsByQuarter(currentQ);
+
+      modal.style.display = 'flex';
+    } catch (e) {
+      showToast('Error abriendo exportador: ' + e.message);
+    }
+  });
+
+  const closeModal = () => { modal.style.display = 'none'; };
+  btnClose.addEventListener('click', closeModal);
+  btnCancel.addEventListener('click', closeModal);
+
+  yearSelect.addEventListener('change', checkPeriodStatus);
+
+  monthsContainer.addEventListener('change', (e) => {
+    if (e.target.classList.contains('month-checkbox')) {
+      quarterButtons.forEach(btn => btn.classList.remove('active'));
+      checkPeriodStatus();
+    }
+  });
+
+  quarterButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectMonthsByQuarter(btn.dataset.q);
+    });
+  });
+
+  deselectBtn.addEventListener('click', () => {
+    monthsContainer.querySelectorAll('.month-checkbox').forEach(cb => cb.checked = false);
+    quarterButtons.forEach(btn => btn.classList.remove('active'));
+    checkPeriodStatus();
+  });
+
+  // Confirmar y Guardar ZIP
+  btnConfirm.addEventListener('click', async () => {
+    const year = yearSelect.value;
+    const months = getSelectedMonths();
+    if (months.length === 0) return;
+
+    // Calcular nombre sugerido
+    let suggestedName = `Facturas_${year}_Periodo.zip`;
+    if (months.length === 12) {
+      suggestedName = `Facturas_${year}_Completo.zip`;
+    } else if (months.length === 1) {
+      suggestedName = `Facturas_${year}_Mes_${months[0]}.zip`;
+    } else if (months.length === 3) {
+      if (months.join(',') === '01,02,03') suggestedName = `Facturas_${year}_1T.zip`;
+      if (months.join(',') === '04,05,06') suggestedName = `Facturas_${year}_2T.zip`;
+      if (months.join(',') === '07,08,09') suggestedName = `Facturas_${year}_3T.zip`;
+      if (months.join(',') === '10,11,12') suggestedName = `Facturas_${year}_4T.zip`;
+    }
+
+    const destinationZipPath = await window.electronAPI.showSaveZipDialog(suggestedName);
+    if (!destinationZipPath) return;
+
+    btnConfirm.disabled = true;
+    const originalText = btnConfirm.innerHTML;
+    btnConfirm.innerHTML = '<span>⏳</span> Generando ZIP...';
+
+    try {
+      const res = await window.electronAPI.doExportZip({ year, months, destinationZipPath });
+      if (res.success) {
+        closeModal();
+        showToast(`✅ ¡Archivo ZIP creado con éxito! (${res.count} facturas)`);
+        window.electronAPI.openFolder(destinationZipPath);
+      } else {
+        alert('Error al generar el ZIP: ' + (res.error || 'Error desconocido'));
+      }
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      btnConfirm.disabled = false;
+      btnConfirm.innerHTML = originalText;
     }
   });
 }

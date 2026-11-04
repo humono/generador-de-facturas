@@ -9,5 +9,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   generateInvoice: (invoiceData) => ipcRenderer.invoke('generate-invoice', invoiceData),
   previewInvoice: (invoiceData) => ipcRenderer.invoke('preview-invoice', invoiceData),
   openFile: (filePath) => ipcRenderer.invoke('open-file', filePath),
-  openFolder: (folderPath) => ipcRenderer.invoke('open-folder', folderPath)
+  openFolder: (folderPath) => ipcRenderer.invoke('open-folder', folderPath),
+
+  // Exportador de Facturas a ZIP
+  getExportData: () => ipcRenderer.invoke('get-export-data'),
+  checkInvoicesPeriod: (params) => ipcRenderer.invoke('check-invoices-period', params),
+  showSaveZipDialog: (suggestedName) => ipcRenderer.invoke('show-save-zip-dialog', suggestedName),
+  doExportZip: (params) => ipcRenderer.invoke('do-export-zip', params)
 });

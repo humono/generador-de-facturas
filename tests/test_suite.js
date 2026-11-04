@@ -84,6 +84,56 @@ async function runTests() {
   fs.rmSync(testOutputDir, { recursive: true, force: true });
   console.log('🧹 Limpieza de archivos de prueba completada.');
 
+  // Test 7: Exportación de Facturas a ZIP para Gestoría
+  console.log('📦 Probando exportador de facturas a ZIP...');
+  const { getAvailableYears, getInvoicesForPeriod, exportInvoicesToZip } = require('../src/utils/exporter');
+  const AdmZip = require('adm-zip');
+
+  const testPeriodDir = path.join(__dirname, 'test_invoices_period');
+  const year2026Dir = path.join(testPeriodDir, '2026');
+  const month10Dir = path.join(year2026Dir, '10');
+  const month11Dir = path.join(year2026Dir, '11');
+
+  fs.mkdirSync(month10Dir, { recursive: true });
+  fs.mkdirSync(month11Dir, { recursive: true });
+
+  fs.writeFileSync(path.join(month10Dir, '2026-101.pdf'), '%PDF-1.4 Mock 1');
+  fs.writeFileSync(path.join(month11Dir, '2026-102.pdf'), '%PDF-1.4 Mock 2');
+
+  const mockExportConfig = { invoicesPath: testPeriodDir };
+
+  // Años disponibles
+  const availableYears = getAvailableYears(mockExportConfig);
+  assert.ok(availableYears.includes(2026), 'Debe detectar el año 2026');
+
+  // Conteo de facturas para 4T
+  const periodData = getInvoicesForPeriod(mockExportConfig, 2026, ['10', '11', '12']);
+  assert.strictEqual(periodData.count, 2, 'Debe encontrar 2 facturas en 4T');
+
+  // Generación física del ZIP
+  const targetZip = path.join(testPeriodDir, 'Facturas_4T_Test.zip');
+  const zipResult = exportInvoicesToZip(mockExportConfig, {
+    year: 2026,
+    months: ['10', '11', '12'],
+    destinationZipPath: targetZip
+  });
+
+  assert.ok(zipResult.success, 'La exportación debe completarse con éxito');
+  assert.strictEqual(zipResult.count, 2, 'El resultado debe reportar 2 facturas');
+  assert.ok(fs.existsSync(targetZip), 'El archivo ZIP debe existir en el disco');
+
+  // Inspección de entradas dentro del ZIP
+  const readZip = new AdmZip(targetZip);
+  const zipEntries = readZip.getEntries().map(e => e.entryName);
+  assert.ok(zipEntries.some(e => e.includes('2026-101.pdf')), 'El ZIP debe incluir 2026-101.pdf');
+  assert.ok(zipEntries.some(e => e.includes('2026-102.pdf')), 'El ZIP debe incluir 2026-102.pdf');
+  assert.ok(zipEntries.includes('00_Listado_Facturas.csv'), 'El ZIP debe incluir el índice CSV');
+
+  console.log(`✅ Test 7: Exportador a ZIP verificado con éxito (${zipEntries.length} entradas en el ZIP).`);
+
+  // Limpieza
+  fs.rmSync(testPeriodDir, { recursive: true, force: true });
+
   console.log('\n🎉 ¡TODAS LAS PRUEBAS PASARON EXITOSAMENTE!');
   app.quit();
 }

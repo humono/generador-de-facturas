@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { loadConfig, saveConfig, getNextInvoiceId, getInvoicePaths } = require('./src/utils/storage');
 const { generateInvoicePdf, buildInvoiceHtml } = require('./src/utils/invoice-generator');
+const { getAvailableYears, getInvoicesForPeriod, exportInvoicesToZip } = require('./src/utils/exporter');
 
 let mainWindow = null;
 
@@ -211,5 +212,47 @@ ipcMain.handle('open-folder', async (event, targetPath) => {
     } catch (e) {
       return { success: false, error: e.message };
     }
+  }
+});
+
+// IPC: Obtener datos para modal de exportación
+ipcMain.handle('get-export-data', async () => {
+  const config = loadConfig();
+  const availableYears = getAvailableYears(config);
+  const currentYear = new Date().getFullYear();
+  return { availableYears, currentYear };
+});
+
+// IPC: Comprobar facturas disponibles en un período
+ipcMain.handle('check-invoices-period', async (event, { year, months }) => {
+  const config = loadConfig();
+  return getInvoicesForPeriod(config, year, months);
+});
+
+// IPC: Diálogo para guardar archivo ZIP
+ipcMain.handle('show-save-zip-dialog', async (event, suggestedName) => {
+  if (!mainWindow) return null;
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Guardar archivo ZIP con las facturas para el gestor',
+    defaultPath: suggestedName,
+    filters: [
+      { name: 'Archivo Comprimido ZIP (*.zip)', extensions: ['zip'] }
+    ]
+  });
+  if (!result.canceled && result.filePath) {
+    return result.filePath;
+  }
+  return null;
+});
+
+// IPC: Ejecutar exportación a ZIP
+ipcMain.handle('do-export-zip', async (event, { year, months, destinationZipPath }) => {
+  try {
+    const config = loadConfig();
+    const result = exportInvoicesToZip(config, { year, months, destinationZipPath });
+    return { success: true, ...result };
+  } catch (error) {
+    console.error('Error exportando facturas a ZIP:', error);
+    return { success: false, error: error.message };
   }
 });
